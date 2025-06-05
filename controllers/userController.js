@@ -82,12 +82,12 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (user) {
     await setTokens(res, user.id, prisma);
-    // generateAccessToken(res, user.id);
-    // res.status(201).json({
-    //   id: user.id,
-    //   name: user.name,
-    //   email: user.email,
-    // });
+    res.status(201).json({
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      email: user.email,
+    });
   } else {
     res.status(400);
     throw new Error('Invalid user data');
@@ -126,7 +126,6 @@ const logoutUser = asyncHandler(async (req, res) => {
  */
 const getUserProfile = asyncHandler(async (req, res) => {
   const userId = parseInt(req.user.id, 10);
-  console.log(`Fetching profile for user ID: ${userId}`);
 
   if (isNaN(userId)) {
     res.status(400);
@@ -137,6 +136,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
     where: { id: userId },
     select: {
       id: true,
+      username: true,
       name: true,
       email: true,
       // Explicitly exclude password
@@ -157,8 +157,8 @@ const getUserProfile = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const updateUserProfile = asyncHandler(async (req, res) => {
-  const userId = parseInt(req.params.id, 10);
-  const { name, email, password } = req.body;
+  const userId = parseInt(req.user.id, 10);
+  const { username, name, email, password } = req.body;
 
   if (isNaN(userId)) {
     res.status(400);
@@ -183,17 +183,19 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
   const updateData = {};
 
+  if (name && name.trim() !== user.name) {
+    updateData.name = name.trim();
+  }
+
   if (name) {
     updateData.name = name.trim();
   }
-  if (email) {
+  if (email && email.toLowerCase() !== user.email) {
     // Check if email is already taken by another user
     const emailExists = await prisma.user.findFirst({
       where: {
         email: email.toLowerCase(),
-        NOT: {
-          id: userId,
-        },
+        NOT: { id: userId },
       },
     });
     if (emailExists) {
@@ -202,6 +204,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     }
     updateData.email = email.toLowerCase();
   }
+
+
   if (password) {
     updateData.password = bcrypt.hashSync(password, 12);
     // Invalidate refresh token if password is changed
@@ -216,8 +220,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: updateData,
-    select: { // Select only the fields to return
+    select: {
       id: true,
+      username: true,
       name: true,
       email: true,
     },
