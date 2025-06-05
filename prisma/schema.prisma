@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String?   @unique
+  name          String?
+  email         String?   @unique 
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+  passwordHash  String?
+  userAuthToken String?   @unique
+}
+
+model Patient {
+  id        Int      @id @default(autoincrement())
+  mrn       Int   @unique
+  fname     String
+  lname     String
+  phone     String
+  email     String   @unique
+  street    String
+  city      String
+  state     String
+  country   String
+  postal    String
+  // doctor    Doctor?  @relation(fields: [doctorId], references: [id])
+  // doctorId  Int?
+  doctors Doctor[]
+  devices   ImplantedDevice[]
+  leads     ImplantedLead[]
+  // implants  Implant[]
+  createdAt DateTime @default(now())
+}
+
+model ImplantedDevice {
+  id        Int      @id @default(autoincrement())
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  patientId Int
+  device    Device   @relation(fields: [deviceId], references: [id])
+  deviceId  Int
+  serial    String   @unique
+  implantedAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model ImplantedLead {
+  id        Int      @id @default(autoincrement())
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  patientId Int
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  leadId    Int
+  serial    String   @unique
+  implantedAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id              Int             @id @default(autoincrement())
+  manufacturer    String 
+  model           String
+  name            String          @unique
+  type            String 
+  chamber         String
+  isMri           String
+  implanted       ImplantedLead[]
+  createdAt       DateTime        @default(now())
+}
+
+model Device {
+  id              Int               @id @default(autoincrement())
+  manufacturer    String 
+  model           String
+  name            String            @unique
+  type            String 
+  isMri           String           
+  implanted       ImplantedDevice[]
+  createdAt       DateTime          @default(now())
+}
+
+model Doctor {
+  id        Int      @id @default(autoincrement())
+  fname     String
+  lname     String
+  phone     String
+  email     String   @unique
+  fax       String
+  street    String
+  city      String
+  state     String
+  country   String
+  postal    String
+  role      String?
+  patients  Patient[]
+  reports Reports[]
+  createdAt DateTime @default(now())
+}
+
+model Reports {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  nameGiven String
+  nameFamily String
+  serial String
+  type String?
+  model String
+  manufacturer String
+  lrl String?
+  mode String?
+  status String?
+
+  RAvoltage String?
+  RAPacePolarity String?
+  RAsensing String?
+  RApulseWidth String?
+  RAimpedance String?
+
+  RVvoltage String?
+  RVPacepolarity String?
+  RVsensing String?
+  RVpulseWidth String?
+  RVimpedance String?
+  HVimpedance String?
+
+  doctor    Doctor?   @relation(fields: [doctorId], references: [id])
+  doctorId  Int?
+}
