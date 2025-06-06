@@ -6,12 +6,15 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.9.3",
     "bun-types": "latest",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "concurrently": "^9.1.2"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "server.js",
-    "dev": "bun run server.js"
+    "server": "bun run server.js",
+    "client": "cd frontend && bun run dev",
+    "build": "cd frontend && bun run build",
+    "dev": "concurrently \"bun --watch server\" \"bun --watch client \""
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
