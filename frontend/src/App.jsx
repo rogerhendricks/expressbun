@@ -29,8 +29,8 @@ function App() {
                 } 
               />
               <Route path="/" element={<Navigate to="/profile" replace />} />
-                            {/* Device Route */}
-                            <Route 
+              {/* Device Route */}
+              <Route 
                 path="/devices"
                 element={
                   <ProtectedRoute>
@@ -44,6 +44,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <LeadsPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Calendar Route */}
+              <Route 
+                path="/calendar"
+                element={
+                  <ProtectedRoute>
+                    <Calendar />
                   </ProtectedRoute>
                 }
               />

@@ -36,6 +36,9 @@ const Navigation = ({ title = "User Dashboard" }) => {
             {user && (
               <>
                 <li className="nav-item">
+                  <a className="nav-link" href="/calendar">Calendar</a>
+                </li>
+                <li className="nav-item">
                   <a className="nav-link" href="/devices">Devices</a>
                 </li>
                 <li className="nav-item">
