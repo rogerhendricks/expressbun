@@ -38,6 +38,7 @@ model Patient {
   doctors Doctor[]
   devices   ImplantedDevice[]
   leads     ImplantedLead[]
+  appointments Appointment[]
   // implants  Implant[]
   createdAt DateTime @default(now())
 }
@@ -71,7 +72,7 @@ model Lead {
   name            String          @unique
   type            String 
   chamber         String
-  isMri           String
+  isMri           Boolean
   implanted       ImplantedLead[]
   createdAt       DateTime        @default(now())
 }
@@ -82,7 +83,7 @@ model Device {
   model           String
   name            String            @unique
   type            String 
-  isMri           String           
+  isMri           Boolean           
   implanted       ImplantedDevice[]
   createdAt       DateTime          @default(now())
 }
@@ -133,4 +134,28 @@ model Reports {
 
   doctor    Doctor?   @relation(fields: [doctorId], references: [id])
   doctorId  Int?
+}
+
+model Appointment {
+  id          Int      @id @default(autoincrement())
+  patientId   Int
+  startTime   DateTime
+  endTime     DateTime
+  checkupType String
+  frequency   String 
+  isRemote    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patient     Patient  @relation(fields: [patientId], references: [id])
+}
+
+model BlockedSlot {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  startTime   DateTime
+  endTime     DateTime
+  reason      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

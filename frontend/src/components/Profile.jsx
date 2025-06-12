@@ -94,24 +94,10 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <div className="container">
-        {/* Navigation Bar */}
-        <nav className="navbar navbar-expand-lg navbar-dark bg-primary rounded mb-4">
-          <div className="container-fluid">
-            <span className="navbar-brand mb-0 h1">User Dashboard</span>
-            <button 
-              onClick={handleLogout} 
-              className="btn btn-outline-light"
-            >
-              <i className="bi bi-box-arrow-right me-2"></i>
-              Logout
-            </button>
-          </div>
-        </nav>
-
         <div className="row justify-content-center">
           <div className="col-lg-8">
             <div className="card shadow">
-              <div className="card-header bg-white py-3">
+              <div className="card-header  py-3">
                 <div className="row align-items-center">
                   <div className="col">
                     <h3 className="card-title mb-0">

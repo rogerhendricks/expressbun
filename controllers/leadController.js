@@ -1,13 +1,22 @@
 import asyncHandler from 'express-async-handler';
 import prisma from "../utils/prisma.js";
 
-// @desc    Get all doctors
-// @route   GET /api/doctors
+// @desc    Get all leads
+// @route   GET /api/leads
 // @access  Private
 const findAll = (req, res) => {
-    prisma.doctor.findMany()
-    .then(doctors => {
-        res.send(doctors);
+    prisma.lead.findMany({
+        select: {
+            id: true,
+            name: true,
+            manufacturer: true,
+            model: true,
+            type: true,
+            isMri: true
+        }
+    })
+    .then(leads => {
+        res.send(leads);
     }).catch(err => {
         res.status(500).send({
             message: err.message
@@ -15,16 +24,21 @@ const findAll = (req, res) => {
     });
 };
 
-// @dec get doctors matching query
-// @route GET /api/doctors?search=query
+//@desc get leads matching query
+// @route GET /api/leads?search=query
 // @access Private
-const getDoctors = asyncHandler(async (req, res) => {
+const getLeads = asyncHandler(async (req, res) => {
     const { search } = req.query;
-    const doctors = await prisma.doctor.findMany({
+    const leads = await prisma.lead.findMany({
         where: {
             OR: [
                 {
                     name: {
+                        contains: search,
+                    }
+                },
+                {
+                    model: {
                         contains: search,
                     }
                 }
@@ -33,194 +47,143 @@ const getDoctors = asyncHandler(async (req, res) => {
         select: {
             id: true,
             name: true,
+            manufacturer: true,
         },
         take: 10
     });
 
-    if (!doctors.length) {
-        return res.status(404).json({ error: 'No such doctor found' });
+    if (!leads.length) {
+        return res.status(404).json({ error: 'No such lead found' });
     }
     
-    res.status(200).json(doctors);
+    res.status(200).json(leads);
 });
 
-// @desc    Get single doctor
-// @route   GET /api/doctors/:id using req.params,  /api/doctors/1 or /api/doctors/?_id=1 using req.query
+// @desc    Get single lead
+// @route   GET /api/leads/:id, using req.query instead of req.params /api/leads?id=1
 // @access  Private
-const getDoctor = asyncHandler(async (req, res) => {
+const getLead = asyncHandler(async (req, res) => {
     const { id } = req.params
-    
-    const doctor = await prisma.doctor.findUnique({
+    const lead = await prisma.lead.findUnique({
         where: {
             id: parseInt(id)
-        },
-        include: {
-            addresses: true
         }
     })
-    if (!doctor) {
-        return res.status(404).json({error: 'No such doctor found'})
+
+    if (!lead) {
+        return res.status(404).json({error: 'No such lead found'})
     }
-    res.status(200).json(doctor)
-    // res.status(200).json({"id":_id})
+    
+    res.status(200).json(lead)
 });
 
-// @desc    Get patients by doctor
-// @route   GET /api/doctors/:id/patients
+// @desc    Post create a lead
+// @route   POST /api/leads
 // @access  Private
-const getDoctorPatients = asyncHandler(async (req, res) => {
-    const { id } = req.params
-    const doctorId = parseInt(id)
-    const doctor = await prisma.doctor.findUnique({
-        where: {
-            id: doctorId
-        },
-        include: {
-            patients:{
-                select: {
-                    id: true,
-                    mrn: true,
-                    fname: true,
-                    lname: true,
-                    phone: true
-                }
-            }
-        }
-    })
-    if (!doctor) {
-        return res.status(404).json({error: 'No such doctor found'})
-    }
-    res.status(200).json(doctor.patients)
-});
-
-// @desc    Post create a doctor
-// @route   POST /api/doctors
-// @access  Private
-const createDoctor = asyncHandler (async (req, res) => {
-    const {name, phone1, phone2, email, addresses} = req.body
-    let emptyFields = []
-
-    if(!name) {
-        emptyFields.push('name')
-    }
-    if(!phone1) {
-        emptyFields.push('phone1')
-    }
-    if(!addresses){
-        emptyFields.push('addresses')
-    }
-    if(emptyFields.length > 0) {
-        return res.status(400).json({ error: 'Please fill in all the fields', emptyFields })
+const createLead = asyncHandler (async (req, res) => {
+    const {model, manufacturer, type, isMri, name} = req.body
+    // check if all fields are filled
+    const requiredFields = ['model', 'manufacturer', 'type', 'isMri', 'name'];
+    let emptyFields = [];
+    
+    requiredFields.forEach(field => {
+      if (!req.body[field]) {
+        emptyFields.push(field);
+      }
+    });
+    
+    if (emptyFields.length > 0) {
+      return res.status(400).json({ error: 'Please fill in all the fields', emptyFields });
     }
 
-    // add doc to db
+    // add dev to db
     try {
-        const doctor = await prisma.doctor.create(
-            {
-                data: {
-                name,
-                phone1,
-                phone2,
-                email,
-                addresses: {
-                    create: addresses.map(addr => ({
-                      street: addr.street,
-                      city: addr.city,
-                      state: addr.state,
-                      country: addr.country,
-                      zip: addr.zip
-                    }))
-                  }
+        const leadModel = await prisma.lead.findMany({
+            where: {
+                model: model
             }
         })
-        res.status(200).json(doctor)
+        if (leadModel.length > 0) {
+            return res.status(400).json({error: 'lead already exists'})
+        }
+        const lead = await prisma.lead.create({
+            data: {
+                model,
+                name,
+                manufacturer,
+                type,
+                isMri
+            }
+        })
+        res.status(200).json(lead)
     } catch (error) {
         res.status(400).json({error: error.message})
     }
     });
 
-// @desc    Update doctor
-// @route   PUT /api/doctors/:id
+// @desc    Update lead
+// @route   PUT /api/leads/:id
 // @access  Private
-const updateDoctor = asyncHandler (async (req, res) => {
+const updatelead = asyncHandler (async (req, res) => {
     const { id } = req.params
-    const doctorId = parseInt(id);
-    const {name, phone1, phone2, email, addresses} = req.body
-    if (!prisma.doctor.findUnique({
+    const leadId = parseInt(id, 10);
+    const { model, manufacturer, type, isMri, name } = req.body
+    if (!prisma.lead.findUnique({
         where: {
-            id:doctorId,
+            id: leadId
         }
     })) {
-        return res.status(404).json({error: 'No such doctor'})
+        return res.status(404).json({error: 'No such lead'})
     }
-    
-    await prisma.address.deleteMany({
-        where: {
-          doctor_id: doctorId,
-        },
-      });
 
-    const doctor = await prisma.doctor.update({
+    const lead = await prisma.lead.update({
         where: {
-            id: doctorId,
+            id: leadId
         },
         data: {
-            id: doctorId,
+            model,
             name,
-            phone1,
-            phone2,
-            email,
-            addresses:{
-                create: addresses.map(addr => ({
-                    street: addr.street,
-                    city: addr.city,
-                    state: addr.state,
-                    zip: addr.zip
-                }))
-                  
-            }
-        },
-        include: {
-            addresses: true
+            manufacturer,
+            type,
+            isMri
         }
-    })  
+    })    
 
-    if (!doctor) {
-        return res.status(400).json({error: 'No such doctor'})
+    if (!lead) {
+        return res.status(400).json({error: 'No such lead'})
     }
-    res.status(200).json(doctor)
+    res.status(200).json(lead)
+    // res.status(200).json({"hello":"hello"})
 });
 
-// @desc    Delete single doctor
-// @route   DELETE /api/doctor/id
+// @desc    Delete single lead
+// @route   DELETE /api/leads/id
 // @access  Private
-const deleteDoctor = asyncHandler (async(req, res) => {
+const deleteLead = asyncHandler (async(req, res) => {
     const {id} = req.query
-    if (!prisma.doctor.findUnique({
+    if (!prisma.lead.findUnique({
         where: {
             id: id
         }
     })) {
-        return res.status(404).json({error: 'No such doctor'})
+        return res.status(404).json({error: 'No such lead'})
     }
-    const doctor = await prisma.doctor.delete({
+    const lead = await prisma.lead.delete({
         where: {
             id: id
         }
     })
     
-    if (!doctor){
-        return res.status(400).json({error: 'No such doctor'})
+    if (!lead){
+        return res.status(400).json({error: 'No such lead'})
     }
 });
 
-
 export {
-    createDoctor,
-    getDoctorPatients,
-    getDoctor,
-    getDoctors, 
-    updateDoctor,
-    deleteDoctor,
+    createLead,
+    getLead,
+    getLeads, 
+    updateLead,
+    deleteLead,
     findAll
 }
